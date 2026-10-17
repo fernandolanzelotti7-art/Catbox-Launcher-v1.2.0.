@@ -14,9 +14,15 @@ jobs:
   build:
     runs-on: windows-latest
 
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/catbox
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          path: catbox
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -38,5 +44,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: catbox-launcher-windows
-          path: release/*.exe
+          path: catbox/release/*.exe
           if-no-files-found: error
