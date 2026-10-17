@@ -1,0 +1,43 @@
+
+name: Build Catbox Launcher
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download source code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check project
+        run: npm run check
+
+      - name: Build Windows installer
+        run: npm run dist -- --win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: "false"
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: catbox-launcher-windows
+          path: release/*.exe
+          if-no-files-found: error
