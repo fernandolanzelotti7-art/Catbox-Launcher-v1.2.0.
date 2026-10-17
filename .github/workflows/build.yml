@@ -2,26 +2,39 @@
 name: Build Catbox Launcher
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: catbox-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: Build Windows Installer
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
 
     steps:
-      - name: Download source code
+      - name: Checkout source code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: npm
+
+      - name: Verify project files
+        run: |
+          test -f package.json
+          test -f package-lock.json
+          echo "Project files found!"
 
       - name: Install dependencies
         run: npm ci
@@ -29,15 +42,21 @@ jobs:
       - name: Check project
         run: npm run check
 
+      - name: Install Wine
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y wine64 wine32
+
       - name: Build Windows installer
-        run: npm run dist -- --win
+        run: npm run dist -- --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: "false"
 
-      - name: Upload installer
+      - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: catbox-launcher-windows
+          name: Catbox-Launcher-Windows
           path: release/*.exe
           if-no-files-found: error
+          retention-days: 30
